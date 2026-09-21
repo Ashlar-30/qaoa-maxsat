@@ -1,0 +1,14 @@
+# Core
+numpy
+scipy
+matplotlib
+pennylane==0.44.1
+pennylane-lightning==0.44.0
+
+# Classical MaxSAT baseline (RC2). Optional: the cross-check is skipped
+# if this is missing, everything else still runs.
+python-sat
+
+# GPU backend (optional, Linux + NVIDIA + CUDA 12):
+#   pip install "pennylane-lightning[gpu]==0.44.0"
+#   pip install custatevec-cu12

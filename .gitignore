@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node (never commit this)
+node_modules/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+.claude/
+
+# Large or generated output
+*.npz
+*.npy
+*.log
+runs/
+checkpoints/
+
+# Keep small result figures and CSVs, but ignore bulk output
+results/raw/
+
+# What the scripts write when you run them from the repo folder
+wcnf_*
+classical_baseline_summary.csv

@@ -1,0 +1,218 @@
+c =========================================================================
+c PROFILE 1 - ELDERLY RA + CARDIOVASCULAR COMORBIDITY (30-qubit CNF)
+c =========================================================================
+c
+c Patient archetype: Mr R, 68 years old, longstanding seropositive
+c rheumatoid arthritis (10+ years) with established atherosclerotic
+c cardiovascular disease (post-MI, on secondary prevention).
+c
+c Epidemiology backing:
+c   - RA patients have 1.5-2x cardiovascular mortality risk
+c     (Crowson CS et al. Arthritis Rheum 2005;52:722-32)
+c   - EULAR 2017 CV risk management in inflammatory arthritis
+c   - Approx 30% of established RA patients have concomitant CAD
+c     (Solomon DH et al. Arthritis Rheum 2003;48:3375-83)
+c
+c Format   : DIMACS WCNF (weighted partial MAX-3-SAT) for qaoa_wcnf.py
+c Encoding : CJ2 (Ansotegui & Levy arXiv:2403.00182, 2024;
+c                  Rodriguez Farres et al. ICCS 2024,
+c                  DOI: 10.1007/978-3-031-63778-0_20)
+c Qubits   : 30  (12 drug variables + 18 ternary-syndrome clauses)
+c
+c -------------------------------------------------------------------------
+c DRUG POOL (all FDA-approved; HODDI-verified record counts in parens)
+c -------------------------------------------------------------------------
+c   x1   Methotrexate         DB00563   L01BA   RA DMARD anchor (11,937)
+c                                                ACR 2021 Class I
+c   x2   Leflunomide          DB01097   L04AK   DHODH inhibitor (2,724)
+c                                                ACR 2021 csDMARD
+c   x3   Etanercept           DB00005   L04AB   TNFα inhibitor (4,729)
+c                                                ACR 2021 bDMARD Class I
+c   x4   Prednisone acetate   DB14646   H02AB   Glucocorticoid (11,607)
+c                                                ACR 2021 bridge therapy
+c   x5   Folic acid           DB00158   B03BB   MTX rescue (3,239)
+c                                                FDA MTX label mandate
+c   x6   Ibuprofen            DB01050   M01AE   NSAID (16,967)
+c                                                Beers 2023 caution
+c   x7   Acetylsalicylic acid DB00945   B01AC   ASA antiplatelet (8,006)
+c                                                ACC/AHA Class I post-MI
+c   x8   Atorvastatin         DB01076   C10AA   Statin (5,222)
+c                                                ACC/AHA Class I post-MI
+c   x9   Metoprolol           DB00264   C07AB   β1-blocker (4,332)
+c                                                ACC/AHA Class I post-MI
+c   x10  Amlodipine           DB00381   C08CA   CCB (6,250)
+c                                                HTN management
+c   x11  Pantoprazole         DB00213   A02BC   PPI (3,578)
+c                                                ACR 2021 NSAID gastroprotection
+c   x12  Cholecalciferol      DB00169   A11CC   Vitamin D (4,637)
+c                                                Steroid-induced osteoporosis
+c
+c -------------------------------------------------------------------------
+c WEIGHT SCHEME (ordinal encoding -- not Lexicomp values)
+c -------------------------------------------------------------------------
+c   Tier A (100): HODDI Bonferroni-passing + DDInter Major +
+c                  documented clinical syndrome
+c   Tier B (50):  HODDI Bonferroni-passing OR DDInter Major +
+c                  documented mechanism
+c   Class I (30):  Standard-of-care guideline recommendation
+c   Class II (15): Conditional / second-line guideline recommendation
+c
+c Header top weight = 101 -> all 18 clauses SOFT
+c
+c -------------------------------------------------------------------------
+c AVOIDANCE CLAUSES (c01-c06) - HODDI-VERIFIED HIGHER-ORDER SIGNALS
+c -------------------------------------------------------------------------
+c
+c c01 (x1=MTX + x3=Etanercept + x2=Leflunomide -> Platelet decreased)
+c   HODDI signal: PRR=176.3 (95% CI 65.5-474.6), a=4 cases,
+c                  p_fisher=1.2e-08, IC=3.1 (Bonferroni-passing)
+c   FDA label backing: Leflunomide PI (boxed warning, hepatotoxicity +
+c                       myelosuppression); Etanercept PI (cytopenia
+c                       warning); MTX PI (myelosuppression boxed warning)
+c   Clinical mechanism: Triple immunosuppression (DHODH inhibition +
+c                        TNFα blockade + folate antagonism) -> additive
+c                        bone-marrow suppression
+c   Weight: 100 (Tier A - all three FDA-labeled cytopenia risks)
+c
+c c02 (x1=MTX + x6=Ibuprofen + x7=Aspirin -> Asthma / AERD)
+c   HODDI signal: PRR=241.2, a=3, p_fisher=2.0e-07
+c   Clinical syndrome: Aspirin-Exacerbated Respiratory Disease (AERD,
+c                       Samter's triad). Prevalence 7% adult asthmatics,
+c                       25% severe asthmatics
+c                       (Annals Allergy 2023, doi:10.1016/j.anai.2023.05.011)
+c   Mechanism: COX-1 inhibition shifts arachidonic acid to leukotrienes
+c   Weight: 50 (Tier B - named syndrome, FDA NSAID label warning)
+c
+c c03 (x6=Ibuprofen + x7=Aspirin + x5=Folic acid -> Asthma / AERD)
+c   HODDI signal: PRR=211.1, a=3, p_fisher=3.2e-07
+c   Same AERD mechanism as c02 (FA appears as concomitant; signal
+c   captures the NSAID+ASA combination in MTX-treated patients)
+c   Weight: 50
+c
+c c04 (x1=MTX + x7=Aspirin + x5=Folic acid -> Asthma / AERD)
+c   HODDI signal: PRR=202.9 (95% CI 99.2-415.2), a=5, p_fisher=3.6e-11
+c   Strongest case-count AERD signal in profile
+c   Weight: 50
+c
+c c05 (x1=MTX + x2=Leflunomide + x4=Prednisone -> Platelet decreased)
+c   HODDI signal: PRR=106.0, a=3, p_fisher=4.0e-06
+c   Triple DMARD+steroid myelosuppression (parallel mechanism to c01)
+c   FDA labels: all three drugs have cytopenia warnings
+c   Weight: 50
+c
+c c06 (x6=Ibuprofen + x11=Pantoprazole + x4=Prednisone -> GI bleed)
+c   Mechanism: NSAID + steroid GI ulceration (Lanas Gastroenterology
+c   2011;141:113); PPI prophylactic but NSAID+steroid combination
+c   elevates ulcer-bleed risk despite PPI
+c   Weight: 30 (mechanistic, weaker HODDI signal in this profile pool)
+c
+c -------------------------------------------------------------------------
+c POSITIVE GUIDELINE CLAUSES (c07-c18)
+c -------------------------------------------------------------------------
+c
+c c07 (x1 v x3 v x2): RA DMARD therapy present
+c   ACR 2021 Class I: every RA patient should be on at least one DMARD
+c   (MTX preferred as anchor; if intolerant, csDMARD or bDMARD alternative)
+c   Weight: 30 (Class I recommendation)
+c
+c c08 (x1 v x5 v x4): MTX-based regimen with appropriate supportive care
+c   Standard of care: MTX + folic acid; bridge prednisone acceptable
+c   FDA MTX label mandates folic acid co-prescription
+c   Weight: 30
+c
+c c09 (x7 v x8 v x9): Post-MI secondary prevention backbone
+c   ACC/AHA STEMI/NSTEMI guidelines (Class I): aspirin + statin +
+c   β-blocker as core post-MI medical therapy
+c   (O'Gara JACC 2013;61:e78; Amsterdam Circulation 2014;130:e344)
+c   Weight: 30
+c
+c c10 (x8 v x9 v x10): Cardiovascular risk reduction regimen
+c   Statin + β-blocker + CCB constitute the core CV control combination
+c   for HTN+CAD overlap
+c   Weight: 30
+c
+c c11 (x11 v x6 v x4): Gastroprotection with high-risk GI exposure
+c   ACR 2021 / Bhatt JACC 2008 Class I: PPI with chronic NSAID and/or
+c   steroid (especially in elderly)
+c   Weight: 30
+c
+c c12 (x12 v x4 v x1): Bone health adjunct (Vit D)
+c   Beers 2023 + NOF guidelines: vitamin D supplementation in elderly,
+c   particularly on chronic steroids or MTX
+c   Weight: 30
+c
+c c13 (x1 v x3 v x4): RA disease control
+c   At least one anti-rheumatic agent active during management
+c   Weight: 15 (Class IIa)
+c
+c c14 (x7 v x8 v x12): CV + bone preventive supplementation
+c   Aspirin + statin + vit D as elderly cardiometabolic prevention bundle
+c   Weight: 15
+c
+c c15 (x9 v x10 v x11): Multi-system management (CV + HTN + GI)
+c   β-blocker + CCB + PPI represents typical multi-morbid elderly stack
+c   Weight: 15
+c
+c c16 (x2 v x3 v x4): Second-line RA flare management
+c   csDMARD + bDMARD + bridge steroid for active disease
+c   Weight: 15
+c
+c c17 (x5 v x12 v x11): Supportive care bundle
+c   Folic acid + vitamin D + PPI as MTX-protocol supportive triad
+c   Weight: 15
+c
+c c18 (x6 v x11 v x10): Symptomatic + protective control
+c   NSAID + PPI gastroprotection alongside antihypertensive
+c   Weight: 15
+c
+c -------------------------------------------------------------------------
+c WEIGHT TOTAL
+c -------------------------------------------------------------------------
+c   Tier A:  c01                          = 100
+c   Tier B:  c02,c03,c04,c05              = 200
+c   Tier C:  c06                          =  30
+c   Class I: c07,c08,c09,c10,c11,c12      = 180
+c   Class IIa: c13,c14,c15,c16,c17,c18    =  90
+c   TOTAL = 600
+c
+c -------------------------------------------------------------------------
+c REFERENCES
+c -------------------------------------------------------------------------
+c   Crowson CS et al. Arthritis Rheum 2005;52:722-32
+c   Solomon DH et al. Arthritis Rheum 2003;48:3375-83
+c   EULAR 2017 CV risk management in inflammatory arthritis
+c   2021 ACR Guideline for Treatment of Rheumatoid Arthritis
+c     Fraenkel L et al. Arthritis Care Res 2021;73:924-39
+c   2013 ACC/AHA STEMI Guideline (O'Gara PT et al. JACC 2013;61:e78)
+c   2014 ACC/AHA NSTEMI Guideline (Amsterdam EA et al. Circulation 2014)
+c   AERD review: Annals Allergy 2023, doi:10.1016/j.anai.2023.05.011
+c   Lanas A et al. Gastroenterology 2011;141:113 (NSAID GI risk)
+c   Bhatt DL et al. JACC 2008 (PPI w/ DAPT consensus)
+c   AGS Beers Criteria 2023
+c   FDA Labels: Methotrexate, Leflunomide, Etanercept, Ibuprofen,
+c     Aspirin, Atorvastatin, Metoprolol, Pantoprazole (DailyMed)
+c   HODDI: arXiv:2502.06274 (FAERS-derived higher-order DDI dataset)
+c   DDInter 2.0: Nucleic Acids Res 2025;53(D1):D1356
+c   CJ2 Encoding: Ansotegui & Levy arXiv:2403.00182
+c     Rodriguez Farres et al. ICCS 2024
+c
+c =========================================================================
+p wcnf 12 18 101
+100 -1 -3 -2 0    c c01  MTX+Etan+Lef -> Platelet decreased (HODDI Tier A)
+ 50 -1 -6 -7 0    c c02  MTX+Ibu+ASA -> AERD (Tier B)
+ 50 -6 -7 -5 0    c c03  Ibu+ASA+FA -> AERD (Tier B)
+ 50 -1 -7 -5 0    c c04  MTX+ASA+FA -> AERD (Tier B)
+ 50 -1 -2 -4 0    c c05  MTX+Lef+Pred -> Platelet decreased (Tier B)
+ 30 -6 -11 -4 0   c c06  Ibu+Panto+Pred -> GI bleed (mechanistic)
+ 30  1  3  2 0    c c07  RA DMARD present (ACR 2021 Class I)
+ 30  1  5  4 0    c c08  MTX regimen with FA rescue + bridge GC
+ 30  7  8  9 0    c c09  Post-MI backbone: ASA+Statin+BB (ACC/AHA Class I)
+ 30  8  9  10 0   c c10  CV control: Statin+BB+CCB (ACC/AHA Class I)
+ 30  11  6  4 0   c c11  Gastroprotection with NSAID/GC (ACR 2021)
+ 30  12  4  1 0   c c12  Vit D with steroid/MTX (Beers/NOF)
+ 15  1  3  4 0    c c13  RA disease control (Class IIa)
+ 15  7  8  12 0   c c14  CV+bone prevention bundle
+ 15  9  10  11 0  c c15  Elderly multimorbid stack
+ 15  2  3  4 0    c c16  Second-line RA flare mgmt
+ 15  5  12  11 0  c c17  MTX-protocol supportive triad
+ 15  6  11  10 0  c c18  NSAID-protected + HTN control

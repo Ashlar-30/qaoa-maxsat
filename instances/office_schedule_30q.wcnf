@@ -1,0 +1,116 @@
+c =============================================================
+c  Hybrid Office Scheduling - FINAL OPERATIONAL INSTANCE
+c  7 employees, 3 functional teams, 5-day workweek
+c  Variables : 15  |  Clauses : 15  |  Total qubits (CJ2) : 30
+c
+c  Constraints: daily coverage + mid-week capacity + per-team
+c  anti-burnout (hard); per-team early/late bracketing + an
+c  Operations mid-week anchor (soft).
+c =============================================================
+c
+c  TEAM DEFINITIONS
+c  ----------------
+c  Team A - Engineering  : Manager, Senior Engineer, Junior Engineer  (3 staff)
+c  Team B - Design       : UX Lead, UX Designer                       (2 staff)
+c  Team C - Operations   : Ops Manager, Business Analyst              (2 staff)
+c
+c  VARIABLE ENCODING
+c  -----------------
+c  x[team][day] = 1  iff  entire team is in office that day
+c
+c       Mon  Tue  Wed  Thu  Fri
+c  A :   1    2    3    4    5
+c  B :   6    7    8    9   10
+c  C :  11   12   13   14   15
+c
+c  WEIGHT CONVENTION
+c  -----------------
+c  Hard clauses : weight = 100  (10 clauses, max 1000)
+c  Soft clauses : weight =  10  ( 5 clauses, max   50)
+c  TOTAL MAX SCORE : 1050
+c
+p wcnf 15 15 100
+c
+c -------------------------------------------------------
+c  HARD - Coverage (H1-H5)
+c
+c  Office must have at least one team present every day.
+c  Justification: front-desk coverage, package deliveries,
+c  visitor reception, emergency escalation, facilities
+c  oversight. An empty office is an operational failure.
+c -------------------------------------------------------
+100  1  6 11 0
+100  2  7 12 0
+100  3  8 13 0
+100  4  9 14 0
+100  5 10 15 0
+c
+c -------------------------------------------------------
+c  HARD - Capacity (H6-H7)
+c
+c  Tuesday and Wednesday cannot host all three teams
+c  simultaneously (5-person hot-desk < 7 employees).
+c  Capacity is enforced ONLY on these two peak days;
+c  Mon/Thu/Fri carry no capacity clause.
+c -------------------------------------------------------
+100 -2  -7 -12 0
+100 -3  -8 -13 0
+c
+c -------------------------------------------------------
+c  HARD - Per-Team Anti-Burnout (H8-H10)
+c
+c  No team may be in office on all three mid-week days
+c  (Tue, Wed, Thu). Three consecutive mid-week days,
+c  potentially combined with Mon/Fri attendance, would
+c  create a 4-5 day in-office week - a wellbeing risk
+c  and burnout pattern.
+c
+c  This is the hard wellbeing floor enforced for every
+c  team uniformly.
+c -------------------------------------------------------
+100 -2  -3  -4 0
+100 -7  -8  -9 0
+100 -12 -13 -14 0
+c
+c -------------------------------------------------------
+c  SOFT - Engineering Bracketing (S1-S2)
+c
+c  Engineering should attend the office in BOTH halves
+c  of the week:
+c    S1 : at least one of Mon/Tue/Wed (early-week)
+c    S2 : at least one of Wed/Thu/Fri (late-week)
+c
+c  Together these push Eng toward 2+ in-office days for
+c  business continuity. Eng leads architecture, code
+c  reviews, mentoring - these activities cannot be
+c  compressed into a single weekly day.
+c -------------------------------------------------------
+10  1  2  3 0
+10  3  4  5 0
+c
+c -------------------------------------------------------
+c  SOFT - Design Bracketing (S3-S4)
+c
+c  Same bracketing pattern for Design:
+c    S3 : at least one of Mon/Tue/Wed
+c    S4 : at least one of Wed/Thu/Fri
+c
+c  Design needs early-week input for sprint planning and
+c  late-week presence for reviews and user research syntheses.
+c -------------------------------------------------------
+10  6  7  8 0
+10  8  9 10 0
+c
+c -------------------------------------------------------
+c  SOFT - Operations Mid-Week Anchor (S5)
+c
+c  Operations should be present at least one day in the
+c  core mid-week window (Tue/Wed/Thu) - this is when
+c  vendor calls, budget reviews, and inter-departmental
+c  coordination happen.
+c
+c  Ops gets a single anchor clause (not bracketed) because
+c  Ops naturally distributes across the full week and is
+c  the team most likely to cover Mon/Fri flex days.
+c -------------------------------------------------------
+10 12 13 14 0

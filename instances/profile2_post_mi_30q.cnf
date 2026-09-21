@@ -1,0 +1,202 @@
+c =========================================================================
+c PROFILE 2 - POST-MI ELDERLY + CHRONIC PAIN + DEPRESSION (30-qubit CNF)
+c =========================================================================
+c
+c Patient archetype: Mrs S, 70 years old, recent ST-elevation MI (3 mo
+c post-revascularization), HFrEF EF=38%, hypertension, diabetic peripheral
+c neuropathy, post-MI major depression, primary hypothyroidism.
+c
+c Epidemiology backing:
+c   - 20-30% of post-MI patients develop major depression
+c     (Glassman AH et al. SADHART JAMA 2002;288:701-9)
+c   - Sertraline is the first-line SSRI post-MI (FDA-approved indication,
+c     SADHART safety/efficacy data)
+c   - Diabetic peripheral neuropathy affects ~50% of T2DM with >10 yr
+c     duration (Pop-Busui R. Diabetes Care 2017;40:136-54)
+c   - Pregabalin FDA-approved for DPNP (FDA label 2004)
+c
+c Format   : DIMACS WCNF for qaoa_wcnf.py
+c Encoding : CJ2 (Ansotegui & Levy 2024; Rodriguez Farres ICCS 2024)
+c Qubits   : 30  (12 drug variables + 18 ternary-syndrome clauses)
+c
+c -------------------------------------------------------------------------
+c DRUG POOL (all FDA-approved; HODDI-verified)
+c -------------------------------------------------------------------------
+c   x1   Acetylsalicylic acid DB00945  B01AC   Antiplatelet (8,006)
+c                                                ACC/AHA Class I post-MI
+c   x2   Clopidogrel          DB00758  B01AC   P2Y12 antagonist (1,693)
+c                                                CURE/AUGUSTUS DAPT
+c   x3   Atorvastatin         DB01076  C10AA   HMG-CoA (5,222)
+c                                                ACC/AHA Class I post-MI
+c   x4   Metoprolol           DB00264  C07AB   β-blocker (4,332)
+c                                                ACC/AHA Class I post-MI
+c   x5   Lisinopril           DB00722  C09AA   ACEi (4,175)
+c                                                ACC/AHA Class I HF post-MI
+c   x6   Hydrochlorothiazide  DB00999  C03AA   Thiazide (3,961)
+c                                                HTN management
+c   x7   Furosemide           DB00695  C03CA   Loop diuretic (3,175)
+c                                                HF symptom mgmt
+c   x8   Pantoprazole         DB00213  A02BC   PPI (3,578)
+c                                                DAPT gastroprotection
+c   x9   Omeprazole           DB00338  A02BC   PPI alternative (4,652)
+c   x10  Sertraline           DB01104  N06AB   SSRI (2,890)
+c                                                SADHART JAMA 2002 post-MI MDD
+c   x11  Pregabalin           DB00230  N02BF   Gabapentinoid (4,197)
+c                                                FDA-approved DPNP
+c   x12  Levothyroxine        DB00451  H03AA   Thyroid hormone (8,837)
+c                                                Hypothyroidism (common >=65)
+c
+c -------------------------------------------------------------------------
+c AVOIDANCE CLAUSES (c01-c06) - HODDI HIGHER-ORDER SIGNALS + ACC/AHA
+c -------------------------------------------------------------------------
+c
+c c01 (x1=ASA + x4=Meto + x11=Pregabalin -> Wound / bleeding complication)
+c   HODDI signal: PRR=499.2 (95% CI 257.1-969.3), a=4 cases,
+c                  p_fisher=6.4e-11, IC=3.15 (Bonferroni-passing)
+c   Strongest higher-order signal in profile - established bleeding
+c   amplification: ASA antiplatelet + βB-induced bradycardia
+c   (fall predisposition) + pregabalin-related dizziness/sedation
+c   (Beers 2023 caution: pregabalin in elderly)
+c   Weight: 100 (Tier A)
+c
+c c02 (x1=ASA + x4=Meto + x8=Pantoprazole -> Wound)
+c   HODDI signal: PRR=134.4 (95% CI 53.7-336.3), a=4, p_fisher=2.7e-08
+c   Same bleeding mechanism (ASA antiplatelet effect)
+c   Pantoprazole present as DAPT gastroprotection - signal captures
+c   "patient on full post-MI regimen has elevated wound/bleed risk"
+c   Weight: 100 (Tier A)
+c
+c c03 (x1=ASA + x4=Meto + x8=Pantoprazole -> Impaired healing)
+c   HODDI signal: PRR=107.2, a=3, p_fisher=3.3e-06
+c   ASA impairs platelet-mediated wound healing
+c   Weight: 50 (Tier B)
+c
+c c04 (x1=ASA + x3=Atorvastatin + x7=Furosemide -> Discomfort)
+c   HODDI signal: PRR=44.8, a=3, p_fisher=4.4e-05
+c   Plausible mechanism: ASA-induced GI discomfort + statin myalgia +
+c   furosemide volume contraction/cramping
+c   Weight: 30 (Tier C - vague AE term)
+c
+c c05 (x1=ASA + x3=Atorvastatin + x6=HCTZ -> General deterioration)
+c   HODDI signal: PRR=34.9 (95% CI 14.4-84.6), a=4, p_fisher=5.0e-06
+c   Composite elderly polypharmacy decompensation signal
+c   Weight: 30
+c
+c c06 (x1=ASA + x3=Atorvastatin + x4=Metoprolol -> Hepatic enzymes ↑)
+c   HODDI signal: PRR=31.1 (95% CI 12.1-79.7), a=4, p_fisher=9.3e-06
+c   Statin hepatotoxicity (FDA label Atorvastatin) amplified by
+c   βB cardiovascular load + ASA
+c   Weight: 50 (Tier B)
+c
+c -------------------------------------------------------------------------
+c POSITIVE GUIDELINE CLAUSES (c07-c18)
+c -------------------------------------------------------------------------
+c
+c c07 (x1 v x2 v x3): DAPT + statin post-MI core
+c   ACC/AHA STEMI/NSTEMI Class I: aspirin + P2Y12 inhibitor (DAPT) +
+c   statin as core post-MI medical therapy
+c   (CURE NEJM 2001, TRITON NEJM 2007, AUGUSTUS NEJM 2019)
+c   Weight: 30 (Class I)
+c
+c c08 (x4 v x5 v x3): Post-MI medical backbone
+c   ACC/AHA Class I: β-blocker + ACEi + statin for HFrEF post-MI
+c   (SAVE NEJM 1992, MERIT-HF Lancet 1999)
+c   Weight: 30
+c
+c c09 (x5 v x4 v x7): HF management triad
+c   ACEi/ARB + β-blocker + loop diuretic (HFrEF, AHA 2022)
+c   Weight: 30
+c
+c c10 (x5 v x6 v x4): Hypertension control
+c   ACEi + thiazide + β-blocker - typical HTN combination
+c   (ALLHAT JAMA 2002; JNC 8 / 2017 ACC/AHA HTN Guideline)
+c   Weight: 30
+c
+c c11 (x8 v x9 v x1): PPI gastroprotection with DAPT
+c   ACC/AHA + ACG Class I: PPI when ASA or DAPT used in patients
+c   with bleeding risk factors
+c   (Bhatt DL et al. JACC 2008;52:1502)
+c   Weight: 30
+c
+c c12 (x10 v x11 v x4): Post-MI psychiatric/neuropathic management
+c   AHA + APA: SSRI for post-MI depression (Glassman SADHART);
+c   Pregabalin for neuropathic pain (FDA-approved DPNP)
+c   Weight: 30
+c
+c c13 (x12 v x10 v x3): Endocrine + mood + lipid management
+c   Levothyroxine for hypothyroidism (universal in elderly);
+c   SSRI for MDD; statin for atherosclerosis
+c   Weight: 15 (Class IIa multi-system)
+c
+c c14 (x1 v x4 v x5): Post-MI Class I trifecta
+c   Aspirin + β-blocker + ACEi - cited together in every ACC/AHA
+c   post-MI quality-of-care metric
+c   Weight: 15
+c
+c c15 (x6 v x7 v x5): Volume/RAAS management for HFrEF
+c   Loop+thiazide+ACEi for diuretic-RAAS combination
+c   Weight: 15
+c
+c c16 (x8 v x9 v x11): GI + neuropathy management
+c   PPI for gastroprotection + pregabalin for DPNP (common elderly stack)
+c   Weight: 15
+c
+c c17 (x3 v x10 v x12): Long-term elderly maintenance bundle
+c   Statin + SSRI + levothyroxine as chronic disease control regimen
+c   Weight: 15
+c
+c c18 (x2 v x3 v x4): Cardiac quality-of-care
+c   Clopidogrel + statin + β-blocker as performance measure trio
+c   Weight: 15
+c
+c -------------------------------------------------------------------------
+c WEIGHT TOTAL
+c -------------------------------------------------------------------------
+c   Tier A:    c01, c02                    = 200
+c   Tier B:    c03, c06                    = 100
+c   Tier C:    c04, c05                    =  60
+c   Class I:   c07,c08,c09,c10,c11,c12     = 180
+c   Class IIa: c13,c14,c15,c16,c17,c18     =  90
+c   TOTAL = 630
+c
+c -------------------------------------------------------------------------
+c REFERENCES
+c -------------------------------------------------------------------------
+c   Glassman AH et al. SADHART JAMA 2002;288:701-9 (sertraline post-MI)
+c   Pop-Busui R et al. Diabetes Care 2017;40:136-54 (DPNP epidemiology)
+c   ACC/AHA STEMI Guideline: O'Gara PT et al. JACC 2013;61:e78
+c   ACC/AHA NSTEMI Guideline: Amsterdam EA et al. Circulation 2014
+c   CURE Trial: NEJM 2001;345:494 (clopidogrel post-MI)
+c   AUGUSTUS Trial: Lopes RD et al. NEJM 2019;380:1509
+c   SAVE Trial: Pfeffer MA et al. NEJM 1992;327:669 (captopril post-MI)
+c   MERIT-HF: Lancet 1999;353:2001 (metoprolol succinate HFrEF)
+c   2022 AHA/ACC/HFSA HF Guideline (Heidenreich et al.)
+c   2017 ACC/AHA HTN Guideline (Whelton et al.)
+c   ALLHAT: JAMA 2002;288:2981
+c   Bhatt DL et al. JACC 2008;52:1502 (PPI with DAPT)
+c   AGS Beers Criteria 2023
+c   FDA Labels: Aspirin, Clopidogrel, Atorvastatin, Metoprolol,
+c     Lisinopril, Pantoprazole, Sertraline, Pregabalin (DailyMed)
+c   HODDI dataset: arXiv:2502.06274
+c   DDInter 2.0: Nucleic Acids Res 2025;53(D1):D1356
+c
+c =========================================================================
+p wcnf 12 18 101
+100 -1 -4 -11 0   c c01  ASA+Meto+Pregab -> Wound (HODDI Tier A PRR=499)
+100 -1 -4 -8 0    c c02  ASA+Meto+Panto -> Wound (Tier A PRR=134)
+ 50 -1 -4 -8 0    c c03  ASA+Meto+Panto -> Impaired healing
+ 30 -1 -3 -7 0    c c04  ASA+Atorv+Furo -> Discomfort
+ 30 -1 -3 -6 0    c c05  ASA+Atorv+HCTZ -> General deterioration
+ 50 -1 -3 -4 0    c c06  ASA+Atorv+Meto -> Hepatic enzymes increased
+ 30  1  2  3 0    c c07  DAPT+statin post-MI core (ACC/AHA Class I)
+ 30  4  5  3 0    c c08  Post-MI medical backbone (BB+ACEi+statin)
+ 30  5  4  7 0    c c09  HFrEF management triad
+ 30  5  6  4 0    c c10  HTN combination control
+ 30  8  9  1 0    c c11  PPI w/ DAPT gastroprotection (ACC/AHA Class I)
+ 30  10 11 4 0    c c12  Post-MI MDD + DPNP management
+ 15  12 10 3 0    c c13  Endocrine + mood + lipid
+ 15  1  4  5 0    c c14  Post-MI Class I trifecta
+ 15  6  7  5 0    c c15  Volume/RAAS HFrEF mgmt
+ 15  8  9  11 0   c c16  GI + neuropathy mgmt
+ 15  3  10 12 0   c c17  Elderly maintenance bundle
+ 15  2  3  4 0    c c18  Cardiac performance measure trio

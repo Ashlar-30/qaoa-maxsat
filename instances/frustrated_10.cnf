@@ -1,0 +1,10 @@
+c Total Qubits: 10 (3 vars + 7 clauses)
+c Concept: Dense Frustration / Over-constrained Triangle
+p cnf 3 7
+1 2 3 0
+-1 -2 3 0
+-1 2 -3 0
+1 -2 -3 0
+-1 -2 -3 0
+1 -2 3 0
+-1 2 3 0

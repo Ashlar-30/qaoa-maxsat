@@ -1,0 +1,53 @@
+c =============================================================
+c  3p3d.cnf -- Tutorial-Scale Individual Scheduling
+c  3 people, 3-day work window (Mon/Tue/Wed)
+c  Variables : 9  |  Clauses : 6  |  Total qubits (CJ2) : 15
+c
+c  Smallest meaningful office scheduling instance:
+c    each day needs coverage, each person should attend at
+c    least once. No capacity or anti-burnout (irrelevant at
+c    this scale). Designed as a teaching / sanity-check
+c    instance for the WCNF-QAOA pipeline.
+c =============================================================
+c
+c  PEOPLE
+c  ------
+c  P1  Alice
+c  P2  Bob
+c  P3  Carol
+c
+c  VARIABLE ENCODING
+c  -----------------
+c  x[person][day] = 1  iff  the person is in office that day
+c
+c              Mon  Tue  Wed
+c  Alice :      1    2    3
+c  Bob   :      4    5    6
+c  Carol :      7    8    9
+c
+c  WEIGHT CONVENTION
+c  -----------------
+c  Hard clauses : weight = 100  (3 clauses, max 300)
+c  Soft clauses : weight =  10  (3 clauses, max  30)
+c  TOTAL MAX SCORE : 330
+c
+p wcnf 9 6 100
+c
+c -------------------------------------------------------
+c  HARD - Daily Coverage (H1-H3)
+c
+c  Each day must have at least one person in office.
+c -------------------------------------------------------
+100 1 4 7 0
+100 2 5 8 0
+100 3 6 9 0
+c
+c -------------------------------------------------------
+c  SOFT - Per-Person Attendance (S1-S3)
+c
+c  Each person should attend the office at least once
+c  during the 3-day window.
+c -------------------------------------------------------
+10 1 2 3 0
+10 4 5 6 0
+10 7 8 9 0
